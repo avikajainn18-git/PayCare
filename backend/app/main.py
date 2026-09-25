@@ -5,8 +5,8 @@ The engine (backend/ml/risk_engine.py) remains the single source of
 truth for scoring. This module only validates HTTP input, loads the
 trained model once at startup, and returns structured JSON.
 
-Run:  uvicorn backend.app.main:app --reload
-Docs: http://127.0.0.1:8000/docs
+Run:  python -m uvicorn backend.app.main:app --reload --port 8001
+Docs: http://127.0.0.1:8001/docs
 """
 
 from __future__ import annotations
@@ -30,10 +30,13 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from risk_engine import RiskInputError, assess_payment  # noqa: E402
 from schemas import PaymentFeaturesRequest, RiskAssessmentResponse  # noqa: E402
 
-# Origins for the future local React dev server(s).
+# Origins for the local React dev server(s). Vite prefers 5173 and
+# automatically falls back to 5174 when it is occupied.
 CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]

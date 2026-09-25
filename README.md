@@ -21,7 +21,21 @@ cancel or continue. User decisions are the intended input for fraud intelligence
 - `frontend/` — React + Vite + TypeScript payment simulator with demo presets and
   the high-risk intervention (cancel/continue) flow.
 
-## Backend setup
+## One-command startup (Windows)
+
+```bash
+start-dev.bat
+```
+
+Creates the venv and installs dependencies if missing, trains the model if
+`model.pkl` is absent, starts **FastAPI on http://127.0.0.1:8001** and the Vite
+dev server (prefers http://localhost:5173, auto-falls back to 5174 if busy),
+waits for both health checks, and opens the frontend in your browser. No manual
+venv activation, no environment variables, no second terminal.
+
+## Manual setup
+
+### Backend
 
 ```bash
 python -m venv .venv
@@ -31,8 +45,8 @@ python -m venv .venv
 # The trained model (backend/ml/model.pkl) is committed. To regenerate it:
 .venv/Scripts/python backend/ml/train.py
 
-# Start the API on http://127.0.0.1:8000 (Swagger docs at /docs)
-.venv/Scripts/python -m uvicorn backend.app.main:app --reload
+# Start the API on http://127.0.0.1:8001 (Swagger docs at /docs)
+.venv/Scripts/python -m uvicorn backend.app.main:app --reload --port 8001
 
 # Run the risk-engine demo and the backend test suite
 .venv/Scripts/python backend/ml/demo.py
@@ -44,7 +58,7 @@ python -m venv .venv
 ```bash
 cd frontend
 npm install
-npm run dev        # http://localhost:5173 (expects the API on port 8000)
+npm run dev        # prefers http://localhost:5173 (expects the API on port 8001)
 npm run build      # production build to dist/
 ```
 

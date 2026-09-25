@@ -5,8 +5,11 @@
 
 import type { PaymentFeatures, RiskAssessment } from "./types";
 
+// Local dev default is the standardized PayCare backend port (8001).
+// Deployment environments override it with VITE_API_BASE_URL — no .env file
+// is required for a normal local run.
 const BASE_URL =
-  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000";
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8001";
 
 /** Errors thrown by the API client. */
 export class ApiError extends Error {
@@ -33,7 +36,7 @@ export async function assessPayment(features: PaymentFeatures): Promise<RiskAsse
     // fetch only throws on network-level failures
     throw new ApiError(
       "network",
-      "Cannot reach the PayCare backend. Is the FastAPI server running on port 8000?"
+      `Cannot reach the PayCare backend at ${BASE_URL}. Is the FastAPI server running?`
     );
   }
 
