@@ -1,0 +1,12 @@
+# Phase 1: ML / risk engine
+pandas
+numpy
+scikit-learn
+xgboost
+joblib
+pytest
+
+# Phase 2: API layer
+fastapi
+uvicorn
+httpx  # AsyncClient/TestClient transport
