@@ -115,17 +115,12 @@ export function HomePage({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
         </div>
 
         <div className="hero-flow" aria-hidden="true">
-          {FLOW_STEPS.map(({ label, icon: Icon }, index) => (
-            <div key={label} className="hero-flow-item">
-              <div className="hero-flow-card">
-                <span className="hero-flow-icon">
-                  <Icon size={19} strokeWidth={2} />
-                </span>
-                <span>{label}</span>
-              </div>
-              {index < FLOW_STEPS.length - 1 && (
-                <ArrowRight size={15} strokeWidth={2} className="hero-flow-arrow" />
-              )}
+          {FLOW_STEPS.map(({ label, icon: Icon }) => (
+            <div key={label} className="hero-flow-card">
+              <span className="hero-flow-icon">
+                <Icon size={19} strokeWidth={2} />
+              </span>
+              <span>{label}</span>
             </div>
           ))}
         </div>

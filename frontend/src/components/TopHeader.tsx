@@ -7,7 +7,10 @@ export function TopHeader() {
   return (
     <header className="topbar">
       <div>
-        <h1 className="brand-name">PayCare</h1>
+        <h1 className="brand-name paycare-wordmark">
+          <span>Pay</span>
+          <span className="care">Care</span>
+        </h1>
         <p className="brand-sub">Pre-Payment Risk Protection</p>
       </div>
       <div className="topbar-right">

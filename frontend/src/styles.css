@@ -152,6 +152,11 @@ body {
   margin: 0;
 }
 
+/* Brand wordmark: "Pay" keeps the default dark text, "Care" is brand cyan. */
+.paycare-wordmark .care {
+  color: #00AEEF;
+}
+
 .brand-sub {
   margin: 1px 0 0;
   color: var(--muted);
@@ -1045,39 +1050,19 @@ button {
   gap: 10px;
 }
 
-.hero-flow-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .hero-flow-card {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  height: 48px;
   background: #fbfcfa;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 0 14px;
   font-size: 0.86rem;
   font-weight: 600;
-}
-
-.hero-flow-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.hero-flow-arrow {
-  color: var(--border-strong);
-  flex-shrink: 0;
+  text-align: left;
 }
 
 .how-grid {
