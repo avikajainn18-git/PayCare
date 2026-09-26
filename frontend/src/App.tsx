@@ -1,23 +1,28 @@
 /**
- * PayCare payment simulator — screen flow:
+ * PayCare app shell: slim sidebar + compact top header + content canvas.
+ * Screen flow inside the simulator tab:
  * form → loading → risk result → (HIGH only) intervention → decision.
  *
  * HIGH-risk decisions are persisted via POST /api/threat-events before the
  * outcome screen is shown; the threat dashboard reads them back from SQLite.
+ * Product logic and API contracts are unchanged — this is presentation only.
  */
 
 import { useCallback, useState } from "react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { ApiError, assessPayment, createThreatEvent } from "./api";
 import { DEMO_PRESETS } from "./presets";
 import type { PaymentFeatures, RiskAssessment, UserDecision } from "./types";
+import type { Tab } from "./nav";
 import { PaymentForm } from "./components/PaymentForm";
 import { RiskResult } from "./components/RiskResult";
 import { InterventionCard } from "./components/InterventionCard";
 import { LoadingState } from "./components/LoadingState";
 import { ThreatDashboard } from "./components/ThreatDashboard";
+import { Sidebar } from "./components/Sidebar";
+import { TopHeader } from "./components/TopHeader";
 
 type Screen = "form" | "loading" | "result" | "intervention" | "saving" | "decided";
-type Tab = "simulator" | "dashboard";
 
 const DEFAULT_FEATURES: PaymentFeatures = DEMO_PRESETS[0].features;
 
@@ -123,103 +128,107 @@ export default function App() {
   }, []);
 
   return (
-    <main className="app">
-      <header className="header">
-        <h1>PayCare</h1>
-        <p className="tagline">Pre-payment fraud risk, explained before you pay.</p>
-        <nav className="tabs" aria-label="PayCare sections">
-          <button
-            className={tab === "simulator" ? "tab active" : "tab"}
-            onClick={() => setTab("simulator")}
-          >
-            PAYMENT SIMULATOR
-          </button>
-          <button
-            className={tab === "dashboard" ? "tab active" : "tab"}
-            onClick={() => setTab("dashboard")}
-          >
-            THREAT DASHBOARD
-          </button>
-        </nav>
-      </header>
+    <div className="app-shell">
+      <Sidebar tab={tab} onNavigate={setTab} />
+      <div className="app-col">
+        <TopHeader />
+        <main className="main">
+          {tab === "dashboard" && <ThreatDashboard />}
 
-      {tab === "dashboard" && <ThreatDashboard />}
-
-      {tab === "simulator" && (
-        <>
-          {screen === "form" && (
+          {tab === "simulator" && (
             <>
-              <PaymentForm
-                features={features}
-                onChange={setFeatures}
-                onSubmit={runAssessment}
-                disabled={false}
-                onPreset={handlePreset}
-                presets={DEMO_PRESETS}
-                validationError={validationError}
-              />
-              {error && (
-                <div className="card error-banner" role="alert">
-                  <p>{error}</p>
-                  <button className="secondary" onClick={() => setError(null)}>
-                    DISMISS
+              {screen === "form" && (
+                <>
+                  <div className="page-head">
+                    <h1>Payment Protection</h1>
+                    <p>Check a payment before authorization.</p>
+                  </div>
+                  <PaymentForm
+                    features={features}
+                    onChange={setFeatures}
+                    onSubmit={runAssessment}
+                    disabled={false}
+                    onPreset={handlePreset}
+                    presets={DEMO_PRESETS}
+                    validationError={validationError}
+                  />
+                  {error && (
+                    <div className="card error-banner" role="alert">
+                      <p>{error}</p>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setError(null)}>
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {screen === "loading" && <LoadingState />}
+
+              {screen === "saving" && (
+                <div className="card loading" role="status">
+                  <div className="spinner" aria-hidden="true" />
+                  <p>Recording your decision…</p>
+                </div>
+              )}
+
+              {screen === "result" && assessment && (
+                <RiskResult assessment={assessment} onEdit={resetToForm} />
+              )}
+
+              {screen === "intervention" && assessment && (
+                <InterventionCard
+                  assessment={assessment}
+                  onDecision={handleDecision}
+                  saveError={saveError}
+                />
+              )}
+
+              {screen === "decided" && decision === "CANCELLED" && (
+                <div className="card outcome outcome-cancelled">
+                  <div className="outcome-head">
+                    <span className="outcome-icon">
+                      <ShieldCheck size={22} strokeWidth={2} />
+                    </span>
+                    <h2>Payment cancelled in simulation.</h2>
+                  </div>
+                  <p>
+                    You chose not to continue with this high-risk payment. The threat event has been
+                    recorded.
+                  </p>
+                  <button className="btn btn-primary" onClick={resetToForm}>
+                    NEW PAYMENT
+                  </button>
+                </div>
+              )}
+
+              {screen === "decided" && decision === "CONTINUED" && (
+                <div className="card outcome outcome-continued">
+                  <div className="outcome-head">
+                    <span className="outcome-icon">
+                      <ArrowRight size={22} strokeWidth={2} />
+                    </span>
+                    <h2>Payment continued in simulation.</h2>
+                  </div>
+                  <p>
+                    You chose to proceed despite the warning. This decision has been recorded for
+                    fraud intelligence.
+                  </p>
+                  <button className="btn btn-primary" onClick={resetToForm}>
+                    NEW PAYMENT
                   </button>
                 </div>
               )}
             </>
           )}
 
-          {screen === "loading" && <LoadingState />}
-
-          {screen === "saving" && (
-            <div className="card loading" role="status">
-              <div className="spinner" aria-hidden="true" />
-              <p>Recording your decision…</p>
-            </div>
-          )}
-
-          {screen === "result" && assessment && (
-            <RiskResult assessment={assessment} onEdit={resetToForm} />
-          )}
-
-          {screen === "intervention" && assessment && (
-            <InterventionCard
-              assessment={assessment}
-              onDecision={handleDecision}
-              saveError={saveError}
-            />
-          )}
-
-          {screen === "decided" && decision === "CANCELLED" && (
-            <div className="card outcome outcome-cancelled">
-              <h2>Payment cancelled in simulation.</h2>
-              <p>You chose not to continue with this high-risk payment. The threat event has been recorded.</p>
-              <button className="primary" onClick={resetToForm}>
-                NEW PAYMENT
-              </button>
-            </div>
-          )}
-
-          {screen === "decided" && decision === "CONTINUED" && (
-            <div className="card outcome outcome-continued">
-              <h2>Payment continued in simulation.</h2>
-              <p>
-                You chose to proceed despite the warning. This decision has been recorded for fraud
-                intelligence.
-              </p>
-              <button className="primary" onClick={resetToForm}>
-                NEW PAYMENT
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      <footer className="footer">
-        <small>
-          PayCare MVP — prototype for pre-payment risk validation. No real payments are processed.
-        </small>
-      </footer>
-    </main>
+          <footer className="footer">
+            <small>
+              PayCare MVP — prototype for pre-payment risk validation. No real payments are processed.
+            </small>
+          </footer>
+        </main>
+      </div>
+    </div>
   );
 }

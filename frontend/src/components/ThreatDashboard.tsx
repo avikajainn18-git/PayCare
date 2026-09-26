@@ -1,10 +1,11 @@
 /**
  * PayCare Threat Dashboard — what suspicious activity has PayCare recorded?
  * Reads live data from SQLite via the FastAPI threat-event endpoints.
- * Intentionally lightweight: metrics, one distribution chart, recent events.
+ * No fake metrics: every number on screen comes from the API.
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, ArrowRight, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -18,16 +19,50 @@ import {
 import { ApiError, getThreatSummary, listThreatEvents } from "../api";
 import type { ThreatEvent, ThreatSummary } from "../types";
 import { RiskReasons } from "./RiskReasons";
+import { StatusBadge } from "./StatusBadge";
 
 const LEVEL_COLORS: Record<string, string> = {
-  LOW: "#2fbf71",
-  MEDIUM: "#f5b32e",
-  HIGH: "#ff5c5c",
+  LOW: "#16a06a",
+  MEDIUM: "#d97706",
+  HIGH: "#dc2626",
 };
 
-function formatTimestamp(iso: string): string {
+function pct(part: number, total: number): number {
+  return total === 0 ? 0 : Math.round((part / total) * 100);
+}
+
+function shortTime(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? iso
+    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function fullTime(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString();
+}
+
+function SnapshotRow({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div className="snapshot-row">
+      <div className="snapshot-top">
+        <span>{label}</span>
+        <b>{value}%</b>
+      </div>
+      <div className="snapshot-bar">
+        <div className="snapshot-fill" style={{ width: `${value}%`, background: color }} />
+      </div>
+    </div>
+  );
 }
 
 export function ThreatDashboard() {
@@ -48,7 +83,9 @@ export function ThreatDashboard() {
       setSummary(summaryData);
       setEvents(eventData.events);
       setSelected((current) =>
-        current ? eventData.events.find((e) => e.transaction_id === current.transaction_id) ?? null : null
+        current
+          ? eventData.events.find((e) => e.transaction_id === current.transaction_id) ?? null
+          : null
       );
     } catch (err) {
       setError(err instanceof ApiError ? err.detail ?? err.message : "Unexpected error.");
@@ -65,99 +102,152 @@ export function ThreatDashboard() {
     return (
       <div className="card loading" role="status">
         <div className="spinner" aria-hidden="true" />
-        <p>Loading threat dashboard…</p>
+        <p>Loading threat intelligence…</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="card error" role="alert">
-        <h2>Dashboard unavailable</h2>
+      <div className="card error-banner" role="alert">
         <p>{error}</p>
-        <div className="error-actions">
-          <button className="primary" onClick={() => void refresh()}>
-            RETRY
-          </button>
-        </div>
+        <button className="btn btn-secondary btn-sm" onClick={() => void refresh()}>
+          Retry
+        </button>
       </div>
     );
   }
 
-  const distribution =
-    summary?.risk_distribution &&
-    (["LOW", "MEDIUM", "HIGH"] as const).map((level) => ({
-      level,
-      count: summary.risk_distribution[level] ?? 0,
-    }));
+  const total = summary?.total_events ?? 0;
+
+  const distribution = summary
+    ? (["LOW", "MEDIUM", "HIGH"] as const).map((level) => ({
+        level,
+        count: summary.risk_distribution[level] ?? 0,
+      }))
+    : [];
 
   return (
     <div className="dashboard">
-      <div className="metric-grid">
-        <div className="card metric">
-          <span className="metric-value">{summary?.total_events ?? 0}</span>
-          <span className="metric-label">Total Threat Events</span>
+      <div className="page-head dash-welcome">
+        <h1>Welcome back,</h1>
+        <p className="dash-sub">PayCare Threat Intelligence — monitor suspicious payment activity and user decisions.</p>
+      </div>
+
+      <div className="kpi-grid">
+        <div className="card kpi">
+          <span className="kpi-icon" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+            <ShieldAlert size={20} strokeWidth={2} />
+          </span>
+          <div>
+            <div className="kpi-value">{summary?.total_events ?? 0}</div>
+            <div className="kpi-label">Total Threat Events</div>
+          </div>
         </div>
-        <div className="card metric">
-          <span className="metric-value metric-high">{summary?.high_risk_events ?? 0}</span>
-          <span className="metric-label">High-Risk Events</span>
+        <div className="card kpi">
+          <span className="kpi-icon" style={{ background: "var(--high-soft)", color: "var(--high)" }}>
+            <AlertTriangle size={20} strokeWidth={2} />
+          </span>
+          <div>
+            <div className="kpi-value">{summary?.high_risk_events ?? 0}</div>
+            <div className="kpi-label">High-Risk Events</div>
+          </div>
         </div>
-        <div className="card metric">
-          <span className="metric-value metric-low">{summary?.cancelled ?? 0}</span>
-          <span className="metric-label">Cancelled</span>
+        <div className="card kpi">
+          <span className="kpi-icon" style={{ background: "var(--low-soft)", color: "var(--low)" }}>
+            <ShieldCheck size={20} strokeWidth={2} />
+          </span>
+          <div>
+            <div className="kpi-value">{summary?.cancelled ?? 0}</div>
+            <div className="kpi-label">Cancelled</div>
+          </div>
         </div>
-        <div className="card metric">
-          <span className="metric-value metric-medium">{summary?.continued ?? 0}</span>
-          <span className="metric-label">Continued</span>
+        <div className="card kpi">
+          <span className="kpi-icon" style={{ background: "var(--medium-soft)", color: "var(--medium)" }}>
+            <ArrowRight size={20} strokeWidth={2} />
+          </span>
+          <div>
+            <div className="kpi-value">{summary?.continued ?? 0}</div>
+            <div className="kpi-label">Continued</div>
+          </div>
         </div>
       </div>
 
-      <div className="card dashboard-chart">
-        <h2>Risk level distribution</h2>
-        {summary && summary.total_events > 0 && distribution ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={distribution} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
-              <CartesianGrid stroke="#1f2f4d" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="level" stroke="#8fa3c0" />
-              <YAxis allowDecimals={false} stroke="#8fa3c0" />
-              <Tooltip
-                cursor={{ fill: "rgba(76, 154, 255, 0.08)" }}
-                contentStyle={{ background: "#121c30", border: "1px solid #1f2f4d", borderRadius: 8 }}
-                labelStyle={{ color: "#e6edf7" }}
-              />
-              <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                {distribution.map((entry) => (
-                  <Cell key={entry.level} fill={LEVEL_COLORS[entry.level]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="empty-note">No threat events recorded yet.</p>
-        )}
+      <div className="dash-grid">
+        <section className="card">
+          <h2 className="dash-card-title">Risk level distribution</h2>
+          <p className="dash-card-sub">Recorded threat events by risk level</p>
+          {total > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={distribution} margin={{ top: 8, right: 8, bottom: 0, left: -22 }}>
+                <CartesianGrid stroke="#eef0ec" vertical={false} />
+                <XAxis dataKey="level" stroke="#6e7671" tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} stroke="#6e7671" tickLine={false} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: "rgba(22, 160, 106, 0.06)" }}
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    boxShadow: "var(--shadow-lift)",
+                    fontSize: 13,
+                  }}
+                />
+                <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={72}>
+                  {distribution.map((entry) => (
+                    <Cell key={entry.level} fill={LEVEL_COLORS[entry.level]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <ShieldCheck size={26} strokeWidth={2} />
+              </div>
+              <h3>No threat events yet</h3>
+              <p>High-risk payment decisions will appear here.</p>
+            </div>
+          )}
+        </section>
+
+        <section className="card">
+          <h2 className="dash-card-title">Threat snapshot</h2>
+          <p className="dash-card-sub">Share of recorded events</p>
+          <SnapshotRow label="High-risk" value={pct(summary?.high_risk_events ?? 0, total)} color={LEVEL_COLORS.HIGH} />
+          <SnapshotRow label="Cancelled" value={pct(summary?.cancelled ?? 0, total)} color={LEVEL_COLORS.LOW} />
+          <SnapshotRow label="Continued" value={pct(summary?.continued ?? 0, total)} color={LEVEL_COLORS.MEDIUM} />
+        </section>
       </div>
 
-      <div className="card">
-        <div className="table-header">
-          <h2>Recent threat events</h2>
-          <button className="secondary refresh-btn" onClick={() => void refresh()}>
-            REFRESH
+      <section className="card">
+        <div className="table-head">
+          <div>
+            <h2>Recent threat events</h2>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => void refresh()}>
+            <RefreshCw size={14} strokeWidth={2} />
+            Refresh
           </button>
         </div>
+
         {events.length === 0 ? (
-          <p className="empty-note">
-            Nothing recorded yet. Run a HIGH-risk scenario in the simulator and cancel or continue —
-            the decision will appear here.
-          </p>
+          <div className="empty-state">
+            <div className="empty-icon">
+              <ShieldCheck size={26} strokeWidth={2} />
+            </div>
+            <h3>No threat events yet</h3>
+            <p>High-risk payment decisions will appear here.</p>
+          </div>
         ) : (
           <table className="events-table">
             <thead>
               <tr>
-                <th>Transaction ID</th>
-                <th>Timestamp</th>
-                <th>Risk Score</th>
-                <th>Level</th>
+                <th>Transaction</th>
+                <th>Time</th>
+                <th>Risk</th>
                 <th>Decision</th>
+                <th>Score</th>
               </tr>
             </thead>
             <tbody>
@@ -167,33 +257,35 @@ export function ThreatDashboard() {
                   className={selected?.transaction_id === event.transaction_id ? "selected" : ""}
                   onClick={() => setSelected(event)}
                 >
-                  <td>{event.transaction_id}</td>
-                  <td>{formatTimestamp(event.timestamp)}</td>
-                  <td>{event.risk_score}/100</td>
+                  <td className="txn-id">{event.transaction_id}</td>
+                  <td className="cell-muted">{shortTime(event.timestamp)}</td>
                   <td>
-                    <span className={`badge badge-${event.risk_level.toLowerCase()}`}>
-                      {event.risk_level}
+                    <StatusBadge level={event.risk_level} />
+                  </td>
+                  <td>
+                    <span className={`badge badge-${event.user_decision.toLowerCase()}`}>
+                      {event.user_decision}
                     </span>
                   </td>
-                  <td>{event.user_decision}</td>
+                  <td className="cell-score">{event.risk_score}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </section>
 
       {selected && (
-        <div className="card event-details">
-          <h2>Event details</h2>
+        <section className="card event-details">
+          <h2 className="dash-card-title">Event detail</h2>
           <dl className="detail-grid">
             <div>
-              <dt>Transaction ID</dt>
+              <dt>Transaction</dt>
               <dd>{selected.transaction_id}</dd>
             </div>
             <div>
               <dt>Timestamp</dt>
-              <dd>{formatTimestamp(selected.timestamp)}</dd>
+              <dd>{fullTime(selected.timestamp)}</dd>
             </div>
             <div>
               <dt>Risk Score</dt>
@@ -208,16 +300,16 @@ export function ThreatDashboard() {
               <dd>{selected.action}</dd>
             </div>
             <div>
-              <dt>User Decision</dt>
+              <dt>Decision</dt>
               <dd>{selected.user_decision}</dd>
             </div>
           </dl>
-          <RiskReasons reasons={selected.reasons} />
-          <small className="simulator-note">
-            Simulated event only — the transaction ID identifies the demo scenario, not a real UPI
-            payment.
-          </small>
-        </div>
+          <RiskReasons reasons={selected.reasons} title="Why flagged" />
+          <p className="detail-meta">
+            Model score {selected.ml_score} · Rule score {selected.rule_score} — simulated event; the
+            transaction ID identifies the demo scenario, not a real UPI payment.
+          </p>
+        </section>
       )}
     </div>
   );

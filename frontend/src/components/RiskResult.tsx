@@ -1,4 +1,4 @@
-/** Risk result panel: score, level badge, action, explanation. */
+/** Premium risk summary card: hero score, badge, reason chips, transparency. */
 
 import type { RiskAssessment } from "../types";
 import { RiskReasons } from "./RiskReasons";
@@ -20,42 +20,41 @@ export function RiskResult({ assessment, onEdit, disabled = false }: RiskResultP
   const { risk_score, risk_level, action, ml_score, rule_score, reasons } = assessment;
 
   return (
-    <div className={`card risk-result result-${risk_level.toLowerCase()}`}>
-      <div className="result-header">
-        <StatusBadge level={risk_level} />
-        <div className="score">
-          <span className="score-value">{risk_score}</span>
-          <span className="score-max"> / 100</span>
-          <span className="score-label">Risk Score</span>
+    <div className={`card result-card result-${risk_level.toLowerCase()}`}>
+      <span className="eyebrow">Payment risk</span>
+      <div className="result-hero">
+        <div>
+          <span className="score-xl">{risk_score}</span>
+          <span className="score-denom">/100</span>
         </div>
+        <StatusBadge level={risk_level} />
       </div>
 
       <p className="result-hint">{ACTION_HINTS[risk_level]}</p>
 
-      <div className="action-row">
-        <span className="action-label">Recommended action:</span>
-        <span className={`action action-${action.toLowerCase()}`}>{action}</span>
-      </div>
+      <p className="action-chip">
+        Recommended action: <b>{action}</b>
+      </p>
 
       <RiskReasons reasons={reasons} />
 
-      <p className="transparency">
+      <p className="score-meta">
         Model score {ml_score} · Rule score {rule_score}
       </p>
 
       <div className="result-actions">
         {risk_level === "LOW" && (
-          <button className="primary" onClick={onEdit} disabled={disabled}>
+          <button className="btn btn-primary" onClick={onEdit} disabled={disabled}>
             PROCEED WITH PAYMENT
           </button>
         )}
         {risk_level === "MEDIUM" && (
-          <button className="secondary" onClick={onEdit} disabled={disabled}>
+          <button className="btn btn-secondary" onClick={onEdit} disabled={disabled}>
             REVIEW &amp; EDIT PAYMENT
           </button>
         )}
         {risk_level === "HIGH" && (
-          <button className="secondary" onClick={onEdit} disabled={disabled}>
+          <button className="btn btn-secondary" onClick={onEdit} disabled={disabled}>
             BACK TO PAYMENT
           </button>
         )}
