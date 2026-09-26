@@ -33,3 +33,28 @@ export interface DemoPreset {
   description: string;
   features: PaymentFeatures;
 }
+
+/** A stored threat event (HIGH-risk payment + user decision). */
+export interface ThreatEvent {
+  transaction_id: string;
+  timestamp: string;
+  risk_score: number;
+  risk_level: "LOW" | "MEDIUM" | "HIGH";
+  action: string;
+  user_decision: "CANCELLED" | "CONTINUED";
+  ml_score: number;
+  rule_score: number;
+  reasons: string[];
+}
+
+/** Payload for POST /api/threat-events. */
+export type ThreatEventInput = Omit<ThreatEvent, "transaction_id" | "timestamp">;
+
+/** Aggregated dashboard metrics from GET /api/threat-events/summary. */
+export interface ThreatSummary {
+  total_events: number;
+  high_risk_events: number;
+  cancelled: number;
+  continued: number;
+  risk_distribution: Record<"LOW" | "MEDIUM" | "HIGH", number>;
+}

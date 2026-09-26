@@ -17,9 +17,15 @@ dist/
 .env.*
 !.env.example
 
+# Local SQLite database (auto-created at backend startup)
+backend/data/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime logs
+*.log
 
 # Local agent metadata
 .freebuff/

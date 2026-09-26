@@ -16,10 +16,17 @@ cancel or continue. User decisions are the intended input for fraud intelligence
 - `backend/ml/` — synthetic dataset generator, XGBoost training, deterministic rule
   engine, hybrid risk engine (`0.6 × ML + 0.4 × rule`, bands: 0–39 LOW, 40–69 MEDIUM,
   70–100 HIGH), demo scenarios.
-- `backend/app/` — FastAPI service exposing the engine (`/api/health`,
-  `/api/assess-payment`).
-- `frontend/` — React + Vite + TypeScript payment simulator with demo presets and
-  the high-risk intervention (cancel/continue) flow.
+- `backend/app/` — FastAPI service: risk assessment (`/api/health`,
+  `/api/assess-payment`) and threat-event persistence (`POST/GET
+  /api/threat-events`, `GET /api/threat-events/summary`) backed by SQLite
+  (`backend/app/database.py`, stdlib `sqlite3`, no ORM; DB auto-created at startup).
+- `frontend/` — React + Vite + TypeScript payment simulator with demo presets, the
+  high-risk intervention (cancel/continue) flow, and the Threat Dashboard
+  (metrics, risk-level distribution chart, event table with details) reading live
+  SQLite data.
+
+React → FastAPI → SQLite. No third-party data stores; no personal information is
+persisted (the beneficiary name is never stored).
 
 ## One-command startup (Windows)
 
@@ -66,5 +73,23 @@ npm run build      # production build to dist/
 
 Use the preset buttons (LOW / MEDIUM / HIGH RISK DEMO) to populate the payment form,
 then **CHECK PAYMENT RISK**. LOW proceeds, MEDIUM suggests review, HIGH opens the
-intervention card where the user must cancel or continue. No real payment is executed
-at any point.
+intervention card where the user must cancel or continue.
+
+- **LOW** → LOW RISK, PROCEED — no threat event is created.
+- **MEDIUM** → MEDIUM RISK, MONITOR — no threat event is created.
+- **HIGH → CANCEL** → "Payment cancelled in simulation" — threat event stored.
+- **HIGH → CONTINUE** → "Payment continued in simulation" — threat event stored.
+
+Every HIGH-risk decision is persisted (as `TXN-YYYYMMDD-NNNN`) before the outcome
+screen appears. Open **THREAT DASHBOARD** to see total events, cancelled vs
+continued, the risk-level distribution, and a newest-first event table — click a
+row for full details (score, action, decision, reasons). Events survive backend
+restarts (SQLite file under `backend/data/`). No real payment is executed at any
+point.
+
+## Tests
+
+```bash
+.venv/Scripts/python -m pytest backend/tests -v   # engine, API, persistence (33 tests)
+cd frontend && npm run build                      # type-checks + production build
+```

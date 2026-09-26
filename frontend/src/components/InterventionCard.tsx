@@ -6,9 +6,10 @@ import { RiskReasons } from "./RiskReasons";
 interface InterventionCardProps {
   assessment: RiskAssessment;
   onDecision: (decision: UserDecision) => void;
+  saveError?: string | null;
 }
 
-export function InterventionCard({ assessment, onDecision }: InterventionCardProps) {
+export function InterventionCard({ assessment, onDecision, saveError }: InterventionCardProps) {
   return (
     <div className="card intervention" role="alertdialog" aria-labelledby="intervention-title">
       <div className="intervention-header">
@@ -27,11 +28,17 @@ export function InterventionCard({ assessment, onDecision }: InterventionCardPro
 
       <RiskReasons reasons={assessment.reasons} />
 
+      {saveError && (
+        <p className="form-error" role="alert">
+          {saveError}
+        </p>
+      )}
+
       <div className="intervention-actions">
-        <button className="danger" onClick={() => onDecision("CANCELLED")}>
+        <button className="danger" disabled={!!saveError} onClick={() => onDecision("CANCELLED")}>
           CANCEL PAYMENT
         </button>
-        <button className="secondary" onClick={() => onDecision("CONTINUED")}>
+        <button className="secondary" disabled={!!saveError} onClick={() => onDecision("CONTINUED")}>
           CONTINUE ANYWAY
         </button>
       </div>
