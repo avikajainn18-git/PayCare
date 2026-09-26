@@ -19,6 +19,7 @@ import { RiskResult } from "./components/RiskResult";
 import { InterventionCard } from "./components/InterventionCard";
 import { LoadingState } from "./components/LoadingState";
 import { ThreatDashboard } from "./components/ThreatDashboard";
+import { HomePage } from "./components/HomePage";
 import { Sidebar } from "./components/Sidebar";
 import { TopHeader } from "./components/TopHeader";
 
@@ -48,7 +49,7 @@ function validate(features: PaymentFeatures): string | null {
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("simulator");
+  const [tab, setTab] = useState<Tab>("home");
   const [features, setFeatures] = useState<PaymentFeatures>(DEFAULT_FEATURES);
   const [screen, setScreen] = useState<Screen>("form");
   const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
@@ -133,6 +134,8 @@ export default function App() {
       <div className="app-col">
         <TopHeader />
         <main className="main">
+          {tab === "home" && <HomePage onNavigate={setTab} />}
+
           {tab === "dashboard" && <ThreatDashboard />}
 
           {tab === "simulator" && (
@@ -222,11 +225,14 @@ export default function App() {
             </>
           )}
 
-          <footer className="footer">
-            <small>
-              PayCare MVP — prototype for pre-payment risk validation. No real payments are processed.
-            </small>
-          </footer>
+          {tab !== "home" && (
+            <footer className="footer">
+              <small>
+                PayCare MVP — prototype for pre-payment risk validation. No real payments are
+                processed.
+              </small>
+            </footer>
+          )}
         </main>
       </div>
     </div>

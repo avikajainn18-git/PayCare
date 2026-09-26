@@ -1,3 +1,3 @@
-/** Top-level navigation ids shared by the sidebar and the app shell. */
+/** Top-level navigation ids shared by the sidebar, home page, and app shell. */
 
-export type Tab = "simulator" | "dashboard";
+export type Tab = "home" | "simulator" | "dashboard";
