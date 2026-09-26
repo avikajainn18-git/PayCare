@@ -11,6 +11,7 @@ Docs: http://127.0.0.1:8001/docs
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import sys
 from contextlib import asynccontextmanager
@@ -49,6 +50,14 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+# Render/deployment: PAYCARE_FRONTEND_URL adds the deployed frontend origin
+# (e.g. https://paycare-frontend.onrender.com) to the allow-list. Exact
+# origin only — no wildcard CORS. A trailing slash is ignored because
+# browsers never send one in the Origin header.
+_frontend_url = os.environ.get("PAYCARE_FRONTEND_URL", "").strip().rstrip("/")
+if _frontend_url:
+    CORS_ORIGINS = [*CORS_ORIGINS, _frontend_url]
 
 MODEL_PATH = ML_DIR / "model.pkl"
 
